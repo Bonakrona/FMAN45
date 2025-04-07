@@ -13,19 +13,40 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 
+data = scipy.io.loadmat('A1_data.mat')
+
 def task4():
     """
     Runs code for task 4
     """
-    data = scipy.io.loadmat('A1_data.mat')
     X = data['X']
     t = data['t']
-    lambda_val = 0.1
+    
+    lambda_val1 = 0.1
+    lambda_val2 = 10
+    lambda_val3 = (lambda_val1 + lambda_val2)/2
+
     w_old = None
-    w_hat = lasso_ccd(t, X, lambda_val, w_old)
+    
+    w_hat1 = lasso_ccd(t, X, lambda_val1, w_old)
+    w_hat2 = lasso_ccd(t, X, lambda_val2, w_old)
+    w_hat3 = lasso_ccd(t, X, lambda_val3, w_old)
+    
+    n = data['n'].flatten()
+    ninterp = data['ninterp'].flatten()
+    xinterp = data['xinterp']
+    
+    y1 = X @ w_hat1
+    y2 = X @ w_hat2
+    y3 = X @ w_hat3
+    
+    y1_interp = xinterp @ w_hat1
+    y2_interp = xinterp @ w_hat2
+    y3_interp = xinterp @ w_hat3
+
 
     print("Task 4")
-    print("LASSO estimate for ccd:", w_hat)
+    print("LASSO estimate for ccd:", w_hat1, w_hat2, w_hat3)
 
 def task5():
     """
