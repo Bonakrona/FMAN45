@@ -150,7 +150,7 @@ def multiframe_lasso_cv(data, reg_matrix, lambda_vec, nbr_folds):
     """
 
     N, M = reg_matrix.shape
-    nbr_frames = 12.5
+    nbr_frames = data.shape[0] // N
     w_opt = np.zeros((M, nbr_frames))
     se_val = np.zeros((nbr_folds, len(lambda_vec)))
     se_est = np.zeros((nbr_folds, len(lambda_vec)))
@@ -177,7 +177,7 @@ def multiframe_lasso_cv(data, reg_matrix, lambda_vec, nbr_folds):
     rmse_val = np.sqrt(np.mean(se_val, axis=0))
     rmse_est = np.sqrt(np.mean(se_est, axis=0))
     
-    lambda_opt = None
+    lambda_opt = lambda_vec[np.argmin(rmse_val)]
     for frame in range(nbr_frames):
         local_data = data[frame * N : (frame + 1) * N]
         w_opt[:, frame] = lasso_ccd(local_data, reg_matrix, lambda_opt, w_old)

@@ -7,7 +7,7 @@ all methods in the lasso-module identical as we can then correct the assignment 
 """
 
 import argparse
-from lasso import lasso_ccd, lasso_cv
+from lasso import lasso_ccd, lasso_cv, multiframe_lasso_cv, lasso_denoise
 import scipy.io
 import numpy as np
 import matplotlib.pyplot as plt
@@ -20,9 +20,9 @@ def plot_reconstruction(n, t, y, y_interp, ninterp, lambda_val):
     plt.plot(n, t, 'o', label='Original data', markersize=6)
     plt.plot(n, y, 'x', label='Reconstruction', markersize=6)
     plt.plot(ninterp, y_interp, '-', label='Interpolated reconstruction', linewidth=2)
-    plt.title(f"LASSO Reconstruction (λ = {lambda_val})", fontsize=14)
-    plt.xlabel('Time index (n)', fontsize=12)
-    plt.ylabel('Amplitude', fontsize=12)
+    plt.title(f"LASSO Reconstruction (λ = {lambda_val})")
+    plt.xlabel('Time index (n)')
+    plt.ylabel('Amplitude')
     plt.legend(fontsize=10)
     plt.grid(True)
     plt.tight_layout()
@@ -35,13 +35,28 @@ def plot_task5(lambda_vector, rmse_val, rmse_est, lambda_opt):
     plt.axvline(lambda_opt, color='k', linestyle='--', label=f'λ_opt = {lambda_opt:.4f}')
 
     plt.xscale('log')
-    plt.xlabel('λ (log scale)', fontsize=12)
-    plt.ylabel('RMSE', fontsize=12)
-    plt.title('Cross-Validation for LASSO', fontsize=14)
+    plt.xlabel('λ (log scale)')
+    plt.ylabel('RMSE')
+    plt.title('Cross-Validation for LASSO')
     plt.legend(fontsize=10)
     plt.grid(True, which='both', linestyle='--', linewidth=0.5)
     plt.tight_layout()
     plt.show()
+    
+def plot_task6(lambda_grid, rmse_val, rmse_est, lambda_opt):
+    plt.figure(figsize=(8, 5))
+    plt.plot(lambda_grid, rmse_val, label='Validation RMSE', marker='o')
+    plt.plot(lambda_grid, rmse_est, label='Estimation RMSE', marker='s')
+    plt.axvline(lambda_opt, linestyle='--', color='k', label=f'λ_opt = {lambda_opt:.4f}')
+    plt.xscale('log')
+    plt.xlabel('λ (log scale)')
+    plt.ylabel('RMSE')
+    plt.title('Multi-frame LASSO Cross-Validation')
+    plt.grid(True, which='both', linestyle='--', linewidth=0.5)
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
+
 
 def task4():
     """
@@ -119,15 +134,20 @@ def task6():
     """
     
     data = scipy.io.loadmat('A1_data.mat')
-    X = data['X']
-    t = data['t']
-    n = data['n'].flatten()
-    ninterp = data['ninterp'].flatten()
-    Xinterp = data['Xinterp']
+    Ttrain = data['Ttrain'].flatten()
+    Xaudio = data['Xaudio']
+    N, M = Xaudio.shape
+    NN = len(Ttrain)
+    nbr_frames = NN // N
     
-
+    lambda_grid = np.logspace(np.log10(1e-3), np.log10(1e3), 40)
+    
+    nbr_folds = 5
+    w_opt, lambda_opt, rmse_val, rmse_est = multiframe_lasso_cv(Ttrain, Xaudio, lambda_grid, nbr_folds)
+    
     print("Task 6")
-
+    plot_task6(lambda_grid, rmse_val, rmse_est, lambda_opt)
+    print("Optimal λ:", lambda_opt)
 
 def task7():
     """
