@@ -97,20 +97,34 @@ def task5():
     data = scipy.io.loadmat('A1_data.mat')
     X = data['X']
     t = data['t']
+    n = data['n'].flatten()
+    ninterp = data['ninterp'].flatten()
+    Xinterp = data['Xinterp']
     
     lambda_vector = np.logspace(-3, 3, 100)
     nbr_folds = 5
     
     w_opt, lambda_opt, rmse_val, rmse_est = lasso_cv(t, X, lambda_vector, nbr_folds)
 
-    plot_task5(lambda_vector, rmse_val, rmse_est, lambda_opt)
     print("Task 5")
+    plot_task5(lambda_vector, rmse_val, rmse_est, lambda_opt)
     print(f"Optimal λ: {lambda_opt}")
+    y_opt = X @ w_opt
+    y_opt_interp = Xinterp @ w_opt
+    plot_reconstruction(n, t, y_opt, y_opt_interp, ninterp, lambda_opt)
 
 def task6():
     """
     Runs code for task 6
     """
+    
+    data = scipy.io.loadmat('A1_data.mat')
+    X = data['X']
+    t = data['t']
+    n = data['n'].flatten()
+    ninterp = data['ninterp'].flatten()
+    Xinterp = data['Xinterp']
+    
 
     print("Task 6")
 

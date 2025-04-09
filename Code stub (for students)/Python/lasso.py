@@ -150,28 +150,28 @@ def multiframe_lasso_cv(data, reg_matrix, lambda_vec, nbr_folds):
     """
 
     N, M = reg_matrix.shape
-    nbr_frames = None
+    nbr_frames = 12.5
     w_opt = np.zeros((M, nbr_frames))
     se_val = np.zeros((nbr_folds, len(lambda_vec)))
     se_est = np.zeros((nbr_folds, len(lambda_vec)))
 
     nbr_est = np.floor(N / nbr_folds)
-    rand_idx = None
+    rand_idx = np.random.permutation(N)
 
     for frame in range(nbr_frames):
         local_data = data[frame * N : (frame + 1) * N]
 
         for kfold in range(nbr_folds):
-            val_ind = None
-            est_ind = None
+            val_ind = rand_idx[kfold * nbr_est : (kfold + 1) * nbr_est]
+            est_ind = np.setdiff1d(rand_idx, val_ind, assume_unique= True)
             if any(np.isin(est_ind, val_ind)):
                 raise ValueError("There are overlapping indices in valind and estind")
 
             w_old = np.zeros(M, 1)
             for idx, lambda_val in enumerate(lambda_vec):
-                w_hat = None
-                se_val[kfold, idx] = None
-                se_est[kfold, idx] = None
+                w_hat = lasso_ccd(local_data[est_ind], reg_matrix[est_ind, :], lambda_val, w_old)
+                se_val[kfold, idx] = np.mean((local_data[val_ind] - reg_matrix[val_ind, :] @ w_hat) ** 2)
+                se_est[kfold, idx] = np.mean((local_data[est_ind] - reg_matrix[est_ind, :] @ w_hat) ** 2)
                 w_old = w_hat
     
     rmse_val = np.sqrt(np.mean(se_val, axis=0))
@@ -180,7 +180,7 @@ def multiframe_lasso_cv(data, reg_matrix, lambda_vec, nbr_folds):
     lambda_opt = None
     for frame in range(nbr_frames):
         local_data = data[frame * N : (frame + 1) * N]
-        w_opt[:, frame] = None
+        w_opt[:, frame] = lasso_ccd(local_data, reg_matrix, lambda_opt, w_old)
 
     return w_opt, lambda_opt, rmse_val, rmse_est
 
