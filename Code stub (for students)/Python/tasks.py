@@ -12,10 +12,11 @@ import scipy.io
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
+import sounddevice as sd
+
 
 
 def plot_reconstruction(n, t, y, y_interp, ninterp, lambda_val):
-    
     plt.figure(figsize=(8, 5))
     plt.plot(n, t, 'o', label='Original data', markersize=6)
     plt.plot(n, y, 'x', label='Reconstruction', markersize=6)
@@ -69,7 +70,7 @@ def task4():
     
     lambda_val1 = 0.1
     lambda_val2 = 10
-    lambda_val3 = (lambda_val1 + lambda_val2)/2
+    lambda_val3 = (lambda_val1 + lambda_val2) / 2  # thought the average would be a suitable lambda but wasn't
 
     w_old = None
     
@@ -132,15 +133,13 @@ def task6():
     """
     Runs code for task 6
     """
-    
     data = scipy.io.loadmat('A1_data.mat')
-    Ttrain = data['Ttrain'].flatten()
-    Xaudio = data['Xaudio']
-    N, M = Xaudio.shape
-    NN = len(Ttrain)
-    nbr_frames = NN // N
-    
-    lambda_grid = np.logspace(np.log10(1e-3), np.log10(1e3), 40)
+    Ttrain = data['Ttrain']
+    Xaudio = data['Xaudio']    
+    lambda_min = 0.001
+    lambda_max = 10
+    num_lambda = 5
+    lambda_grid = np.exp(np.linspace(np.log(lambda_min), np.log(lambda_max), num_lambda))
     
     nbr_folds = 5
     w_opt, lambda_opt, rmse_val, rmse_est = multiframe_lasso_cv(Ttrain, Xaudio, lambda_grid, nbr_folds)
@@ -153,8 +152,62 @@ def task7():
     """
     Runs code for task 7
     """
+    
+    data = scipy.io.loadmat("A1_data.mat")
+    Ttest = data["Ttest"]
+    Xaudio = data["Xaudio"]
+    fs = int(data["fs"].squeeze())
 
+    lambda_opt = 0.010000000000000004
+    lambda_low = 0.0001
+    lambda_medium = 0.1
+    lambda_high = 0.5
+    
+    Ytest_opt = lasso_denoise(Ttest, Xaudio, lambda_opt)
+    Ytest_low = lasso_denoise(Ttest, Xaudio, lambda_low)
+    Ytest_medium = lasso_denoise(Ttest, Xaudio, lambda_medium)
+    Ytest_high = lasso_denoise(Ttest, Xaudio, lambda_high)
+
+    scipy.io.savemat("denoised_audio_opt.mat", {"Ytest": Ytest_opt, "fs": fs})
+    scipy.io.savemat("denoised_audio_low.mat", {"Ytest": Ytest_low, "fs": fs})
+    scipy.io.savemat("denoised_audio_medium.mat", {"Ytest": Ytest_medium, "fs": fs})
+    scipy.io.savemat("denoised_audio_high.mat", {"Ytest": Ytest_high, "fs": fs})
+    
     print("Task 7")
+    
+    
+def listenToAudioFiles():
+    try:
+        data_opt = scipy.io.loadmat("denoised_audio_opt.mat")
+        data_low = scipy.io.loadmat("denoised_audio_low.mat")
+        data_medium = scipy.io.loadmat("denoised_audio_medium.mat")
+        data_high = scipy.io.loadmat("denoised_audio_high.mat")
+
+        Ytest_opt = data_opt["Ytest"].astype(np.float32).flatten()
+        Ytest_low = data_low["Ytest"].astype(np.float32).flatten()
+        Ytest_medium = data_medium["Ytest"].astype(np.float32).flatten()
+        Ytest_high = data_high["Ytest"].astype(np.float32).flatten()
+        fs = int(data_opt["fs"].squeeze())
+
+        print("Playing optimal λ audio...")
+        sd.play(Ytest_opt, fs)
+        sd.wait()
+
+        print("Playing low λ audio...")
+        sd.play(Ytest_low, fs)
+        sd.wait()
+
+        print("Playing medium λ audio...")
+        sd.play(Ytest_medium, fs)
+        sd.wait()
+
+        print("Playing high λ audio...")
+        sd.play(Ytest_high, fs)
+        sd.wait()
+        
+    except Exception as e:
+        print("Error while loading or playing audio:", e)
+    
 
 
 def main():
@@ -167,7 +220,7 @@ def main():
     group.add_argument(
         "-t",
         "--task",
-        choices=["4", "5", "6", "7"],
+        choices=["4", "5", "6", "7", "8"],
         help="Runs code for selected task.",
     )
     args = parser.parse_args()
@@ -188,6 +241,8 @@ def main():
         task6()
     elif task == 7:
         task7()
+    elif task == 8:
+        listenToAudioFiles()
     else:
         raise ValueError("Select a valid task number")
 

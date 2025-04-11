@@ -54,20 +54,16 @@ def lasso_ccd(data, reg_matrix, lambda_val, w_old=None):
             # res = None # ... remove impact of newly estimated w(kind) from residual.
             # w_ind[idx] = None # update whether w_ind at index idx is zero or not.
             
-            
-            reg_col = reg_matrix[:, idx]
-            
             # print("res.shape:", res.shape)
             # print("reg_col.shape:", reg_col.shape)
             # print("w_hat[idx].shape:", np.shape(w_hat[idx]))
             # print("reg_col * w_hat[idx] shape:", (reg_col * w_hat[idx]).shape)
             
+            reg_col = reg_matrix[:, idx]
             res += (reg_col * w_hat[idx]).reshape(-1, 1)
             w_hat[idx] = np.sign(reg_col.T @ res) * max(abs(reg_col.T @ res) - lambda_val, 0) / (reg_col.T @ reg_col)
             res -= (reg_col * w_hat[idx]).reshape(-1, 1)
             w_ind[idx] = int(abs(w_hat[idx]) > lambda_val)
-            
-            
             
     return w_hat
 
@@ -93,12 +89,12 @@ def lasso_cv(data, reg_matrix, lambda_vec, nbr_folds):
     se_est = np.zeros((nbr_folds, len(lambda_vec)))
 
     nbr_est = np.floor(reg_matrix.shape[0] / nbr_folds).astype(np.int32)
-    rand_idx = np.random.permutation(reg_matrix.shape[0]) # changed
+    rand_idx = np.random.permutation(reg_matrix.shape[0])
 
     for kfold in range(nbr_folds):
         print(f"Fold: {kfold} of {nbr_folds}")
-        val_ind = rand_idx[kfold * nbr_est : (kfold + 1) * nbr_est] # changed
-        est_ind = np.setdiff1d(rand_idx, val_ind, assume_unique=True) # changed
+        val_ind = rand_idx[kfold * nbr_est : (kfold + 1) * nbr_est]
+        est_ind = np.setdiff1d(rand_idx, val_ind, assume_unique=True)
         if any(np.isin(est_ind, val_ind)):
             raise ValueError("There are overlapping indices in valind and estind")
 
@@ -106,9 +102,7 @@ def lasso_cv(data, reg_matrix, lambda_vec, nbr_folds):
         for idx, lambda_val in enumerate(lambda_vec):
             print(f"Value: {idx} of {len(lambda_vec)}")
             
-            # changed the 3 loc below 
             X_est = reg_matrix[est_ind, :]
-            # t_val = data[est_ind]
             t_est = data[est_ind]
             
             X_val = reg_matrix[val_ind, :]
@@ -116,7 +110,6 @@ def lasso_cv(data, reg_matrix, lambda_vec, nbr_folds):
             
             w_hat = lasso_ccd(data[est_ind], X_est, lambda_val, w_old)
             
-            # changed below
             se_val[kfold, idx] = np.mean((t_val - X_val @ w_hat) ** 2)
             se_est[kfold, idx] = np.mean((t_est - X_est @ w_hat) ** 2)
             
@@ -126,7 +119,7 @@ def lasso_cv(data, reg_matrix, lambda_vec, nbr_folds):
     rmse_est = np.sqrt(np.mean(se_est, axis=0))
     lambda_opt = lambda_vec[np.argmin(rmse_val)]
     
-    w_opt = lasso_ccd(data, reg_matrix, lambda_opt, w_old) # changed
+    w_opt = lasso_ccd(data, reg_matrix, lambda_opt, w_old)
 
     return w_opt, lambda_opt, rmse_val, rmse_est
 
@@ -150,24 +143,28 @@ def multiframe_lasso_cv(data, reg_matrix, lambda_vec, nbr_folds):
     """
 
     N, M = reg_matrix.shape
-    nbr_frames = data.shape[0] // N
+        
+    nbr_frames = len(data) // N
+    # nbr_frames = min(nbr_frames, 3) # faster testing
+    
     w_opt = np.zeros((M, nbr_frames))
     se_val = np.zeros((nbr_folds, len(lambda_vec)))
     se_est = np.zeros((nbr_folds, len(lambda_vec)))
 
-    nbr_est = np.floor(N / nbr_folds)
+    nbr_est = int(np.floor(N / nbr_folds))
     rand_idx = np.random.permutation(N)
 
     for frame in range(nbr_frames):
         local_data = data[frame * N : (frame + 1) * N]
 
         for kfold in range(nbr_folds):
+            print(f"Fold: {kfold} of {nbr_folds}")
             val_ind = rand_idx[kfold * nbr_est : (kfold + 1) * nbr_est]
-            est_ind = np.setdiff1d(rand_idx, val_ind, assume_unique= True)
+            est_ind = np.setdiff1d(rand_idx, val_ind, assume_unique=True)
             if any(np.isin(est_ind, val_ind)):
                 raise ValueError("There are overlapping indices in valind and estind")
 
-            w_old = np.zeros(M, 1)
+            w_old = np.zeros((M, 1))
             for idx, lambda_val in enumerate(lambda_vec):
                 w_hat = lasso_ccd(local_data[est_ind], reg_matrix[est_ind, :], lambda_val, w_old)
                 se_val[kfold, idx] = np.mean((local_data[val_ind] - reg_matrix[val_ind, :] @ w_hat) ** 2)
@@ -180,10 +177,9 @@ def multiframe_lasso_cv(data, reg_matrix, lambda_vec, nbr_folds):
     lambda_opt = lambda_vec[np.argmin(rmse_val)]
     for frame in range(nbr_frames):
         local_data = data[frame * N : (frame + 1) * N]
-        w_opt[:, frame] = lasso_ccd(local_data, reg_matrix, lambda_opt, w_old)
+        w_opt[:, frame] = lasso_ccd(local_data, reg_matrix, lambda_opt, w_old).flatten()
 
     return w_opt, lambda_opt, rmse_val, rmse_est
-
 
 def lasso_denoise(Tnoisy, X, lambda_val):
     """
@@ -217,11 +213,12 @@ def lasso_denoise(Tnoisy, X, lambda_val):
         t = Tnoisy[loc + idx]  # Pick out data in the current frame
         wlasso = lasso_ccd(t, X, lambda_val)  # Calculate LASSO estimate
         nzidx = np.abs(wlasso.reshape(-1)) > 0  # Find nonzero indices
-
+        
         # Calculate weighted OLS estimate for nonzero indices
         wols = np.linalg.lstsq(Z @ X[:, nzidx], Z @ t, rcond=None)[0]
         # Reconstruct denoised signal
         Yclean[loc + idx] += Z @ X[:, nzidx] @ wols
+
 
         loc += hop  # Move indices for the next frame
         print(f"{int(loc / NN * 100)} %")  # Show progress
