@@ -30,12 +30,11 @@ def K_means_clustering(X, K):
 
     for i in range(intermax):
         # Step 1: Assign to clusters
-        y = []
+        y = step_assign_cluster(X, Cold)
 
         # Step 2: Assign new clusters
-        C = []
-
-        if fcdist(C, Cold) < conv_tol:
+        C, delta = step_compute_mean(X, y, Cold)
+        if delta < conv_tol:
             return y, C
 
         Cold = C.copy()
@@ -44,13 +43,16 @@ def K_means_clustering(X, K):
 
 def fxdist(x,C):
     # CHANGE
-    d = None
+    d = C - x.reshape(-1, 1)
+    d = np.sum(d**2, axis=0)
     # DO NOT CHANGE
     return d
 
 def fcdist(C1,C2):
     # CHANGE
-    d = None
+    # d = C1 - C2
+    # d = np.sum(d**2, axis=0)
+    d = np.linalg.norm(C1 - C2)
     # DO NOT CHANGE
     return d
 
@@ -72,6 +74,40 @@ def load_data():
         train_data = mat_data['train_data_01']
         train_labels = mat_data['train_labels_01']
         return [test_data, test_labels, train_data, train_labels]
+    
+def step_assign_cluster(X, C):
+    d = X[:, :, None] - C[:, None, :]
+    dist = np.sum(d**2, axis=0)
+    return np.argmin(dist, axis=1)
+
+def step_compute_mean(X, y, cold):
+    k = cold.shape[1]
+    cnew = np.zeros_like(cold)
+    for k in range(k):
+        members = X[:, y == k]
+        if members.size == 0:
+            cnew[:, k] = cold[:, k]
+        else:
+            cnew[:, k] = members.mean(axis=1)
+            
+    move = np.linalg.norm(cnew - cold)
+    return cnew, move
+
+def labeling(y_train, y_clusters, k=2):
+    c_labels = np.zeros(k, dtype = int)
+    for i in range(k):
+        members = y_train[y_clusters == i]
+        if members.mean() >= 0.5:
+            c_labels[i] = 1
+    return c_labels
+
+def K_means_classifier(x, C, c_labels):
+    dist = np.sum((C-x[:, None])**2, axis=0)
+    k_near = np.argmin(dist)
+    return c_labels[k_near]
+
+
+    
 
 if __name__ == "__main__":
     data = load_data()
