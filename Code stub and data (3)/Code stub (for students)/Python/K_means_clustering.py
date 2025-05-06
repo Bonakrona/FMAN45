@@ -106,9 +106,6 @@ def K_means_classifier(x, C, c_labels):
     k_near = np.argmin(dist)
     return c_labels[k_near]
 
-
-    
-
 if __name__ == "__main__":
     data = load_data()
     nbr_clusters = 4 # Replace with you chosen int
