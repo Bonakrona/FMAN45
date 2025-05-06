@@ -108,19 +108,37 @@ def K_means_classifier(x, C, c_labels):
     k_near = np.argmin(dist)
     return c_labels[k_near]
 
-def svm(X_train, y_train, X_test, C=1.0):
-    linearsvm = SVC(kernel='linear', C=C)
-    linearsvm.fit(X_train, y_train)
-    y_pred_train = linearsvm.predict(X_train)
-    y_pred_test  = linearsvm.predict(X_test)
+def svm_linear(X_train, y_train, X_test, C=1.0):
+    linear_svm = SVC(kernel='linear', C=C)
+    linear_svm.fit(X_train, y_train) # linearsvm.fit(X_train.T, y_train) ? 
+    y_pred_train = linear_svm.predict(X_train) # .T ?
+    y_pred_test  = linear_svm.predict(X_test) # .T ?
     return y_pred_train, y_pred_test
 
-def svm_data(y_true, y_pred):
+def svm_gausian(X_train, y_train, X_test, gamma=0.1):
+    gaus_svm = SVC(kernel='rbf', gamma=gamma)
+    gaus_svm.fit(X_train, y_train)
+    y_pred_train = gaus_svm.predict(X_train) #.T ?
+    y_pred_test  = gaus_svm.predict(X_test) # .T ?
+    return y_pred_train, y_pred_test
+
+def svm_data_print(y_true, y_pred):
     n00 = np.sum((y_true==0) & (y_pred==0))
     n01 = np.sum((y_true==1) & (y_pred==0))
     n10 = np.sum((y_true==0) & (y_pred==1))
     n11 = np.sum((y_true==1) & (y_pred==1))
+    
+    N = y_true.size
+    sum = n01 + n10
+    rate = sum / N * 100
+    print(f"N = {N}")
+    print(f"'0' {n00:6d} {n01:6d}")
+    print(f"'1' {n10:6d} {n11:6d}")
+    print(f"Sum misclassified = {sum}")
+    print(f"Misclassification rate (%) = {rate:.2f}%\n")
+    
     return n00, n01, n10, n11
+
     
 
 
@@ -131,27 +149,32 @@ if __name__ == "__main__":
     # nbr_clusters = 4 # Replace with you chosen int
     # y, C = K_means_clustering(data[2], nbr_clusters)
     
-    #SVM (12)
-    y_pred_train, y_pred_test = svm(data[2].T, data[3].ravel(), data[0].T, C=1.0)
+    #SVM linear (12) -------------------------------------------------------
+    # y_pred_train, y_pred_test = svm_linear(data[2].T, data[3].ravel(), data[0].T, C=1.0)
     
-    n00_train, n01_train, n10_train, n11_train = svm_data(y_pred_train, y_pred_train)
-    N_train = y_pred_train.size
-    sum_train = n01_train + n10_train      # those got flipped
-    rate_train = sum_train / N_train * 100
+    # n00_train, n01_train, n10_train, n11_train = svm_data_print(y_pred_train, y_pred_train) bara denna
+    # N_train = y_pred_train.size
+    # sum_train = n01_train + n10_train
+    # rate_train = sum_train / N_train * 100
 
-    n00_test , n01_test , n10_test , n11_test  = svm_data(y_pred_test,  y_pred_test)
-    N_test  = y_pred_test.size
-    sum_test  = n01_test  + n10_test
-    rate_test  = sum_test  / N_test  * 100
+    # n00_test , n01_test , n10_test , n11_test  = svm_data_print(y_pred_test,  y_pred_test) bara denna
+    # N_test  = y_pred_test.size
+    # sum_test  = n01_test  + n10_test
+    # rate_test  = sum_test  / N_test  * 100
     
-    print(f"N_train = {N_train}")
-    print(f"'0' {n00_train:6d} {n01_train:6d}")
-    print(f"'1' {n10_train:6d} {n11_train:6d}")
-    print(f"Sum misclassified = {sum_train}")
-    print(f"Misclassification rate (%) = {rate_train:.2f}%\n")
+    # print(f"N_train = {N_train}")
+    # print(f"'0' {n00_train:6d} {n01_train:6d}")
+    # print(f"'1' {n10_train:6d} {n11_train:6d}")
+    # print(f"Sum misclassified = {sum_train}")
+    # print(f"Misclassification rate (%) = {rate_train:.2f}%\n")
     
-    print(f"N_test  = {N_test}")
-    print(f"'0' & {n00_test:6d} {n01_test:6d}")
-    print(f"'1' & {n10_test:6d} {n11_test:6d}")
-    print(f"Sum misclassified = {sum_test}")
-    print(f"Misclassification rate (%) = {rate_test:.2f}%")
+    # print(f"N_test  = {N_test}")
+    # print(f"'0' & {n00_test:6d} {n01_test:6d}")
+    # print(f"'1' & {n10_test:6d} {n11_test:6d}")
+    # print(f"Sum misclassified = {sum_test}")
+    # print(f"Misclassification rate (%) = {rate_test:.2f}%")
+    
+    # SVM gaussian (13) -------------------------------------------------------
+    y_pred_train, y_pred_test = svm_gausian(data[2].T, data[3].ravel(), data[0].T, gamma=0.1)
+    svm_data_print(y_pred_train, y_pred_train)
+    svm_data_print(y_pred_test, y_pred_test)
