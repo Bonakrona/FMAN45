@@ -52,18 +52,20 @@ def plot_pca(X, y):
     Z = PCs.T @ Xc
 
     plt.figure(figsize=(8, 6))
-    mask0 = y == 0
-    mask1 = y == 1
+    unique_labels = np.unique(y)
+    markers = ['o', 'x', 's', 'D', '*']
+    cmap = plt.get_cmap('tab10')
 
-    plt.scatter(Z[0, mask0], Z[1, mask0], c = 'red', marker = "o", label = 'Class 0', alpha=.6) # testa alpha=0.6?
-    plt.scatter(Z[0, mask1], Z[1, mask1], c = 'blue', marker = "x", label = 'Class 1', alpha=.6) # testa alpha= 0.6?
-    plt.xlabel('PC1', fontsize = 14)
-    plt.ylabel('PC2', fontsize = 14)
-    plt.title('PCA of MNIST Data', fontsize = 16)
+    for i, k in enumerate(unique_labels):
+        mask = y == k
+        plt.scatter(Z[0, mask], Z[1, mask], label=f'Cluster {k}', marker=markers[i % len(markers)], color=cmap(i), alpha=0.6)
+
+    plt.xlabel('PC1', fontsize=14)
+    plt.ylabel('PC2', fontsize=14)
+    plt.title('PCA of Clusters', fontsize=16)
     plt.legend()
     plt.grid()
     plt.show()
-    print("Mean of projected data:", Z.mean(axis=1))
 
 def fxdist(x,C):
     # CHANGE
@@ -81,9 +83,11 @@ def fcdist(C1,C2):
     return d
 
 def step_assign_cluster(X, C):
-    d = X[:, :, None] - C[:, None, :]
-    dist = np.sum(d**2, axis=0)
-    return np.argmin(dist, axis=1)
+    # d = X[:, :, None] - C[:, None, :]
+    # dist = np.sum(d**2, axis=0)
+    # dist = fxdist(X, C)
+    # return np.argmin(dist, axis=1)
+    return np.array([np.argmin(fxdist(x_i, C)) for x_i in X.T])
 
 def step_compute_mean(X, y, cold):
     k = cold.shape[1]
@@ -165,10 +169,15 @@ if __name__ == "__main__":
     data = load_data()
     
     # PCA (7) -------------------------------------------------------
-    plot_pca(data[2], data[3].ravel())
+    # plot_pca(data[2], data[3].ravel())
     
-    # nbr_clusters = 4 # Replace with you chosen int
-    # y, C = K_means_clustering(data[2], nbr_clusters)
+    # nbr_clusters = 2 # Replace with you chosen int
+    
+    for K in (2, 5):
+        y, C = K_means_clustering(data[2], K)
+        print(f"Plotting K-means clustering with K = {K}")
+        plot_pca(data[2], y)
+        
     
     #SVM linear (12) -------------------------------------------------------
     # print("SVM linear")
