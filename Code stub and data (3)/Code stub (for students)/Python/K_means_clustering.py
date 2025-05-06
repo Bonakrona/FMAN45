@@ -2,6 +2,7 @@ import numpy as np
 import scipy
 from sklearn import svm
 from sklearn.svm import SVC
+import matplotlib.pyplot as plt
 
 def K_means_clustering(X, K):
     """
@@ -43,6 +44,27 @@ def K_means_clustering(X, K):
 
     return y, C
 
+def plot_pca(X, y):
+    my = X.mean(axis=1, keepdims=True)
+    Xc = X - my
+    U, S, Vt = np.linalg.svd(Xc, full_matrices=False)
+    PCs = U[:, :2]
+    Z = PCs.T @ Xc
+
+    plt.figure(figsize=(8, 6))
+    mask0 = y == 0
+    mask1 = y == 1
+
+    plt.scatter(Z[0, mask0], Z[1, mask0], c = 'red', marker = "o", label = 'Class 0', alpha=.6) # testa alpha=0.6?
+    plt.scatter(Z[0, mask1], Z[1, mask1], c = 'blue', marker = "x", label = 'Class 1', alpha=.6) # testa alpha= 0.6?
+    plt.xlabel('PC1', fontsize = 14)
+    plt.ylabel('PC2', fontsize = 14)
+    plt.title('PCA of MNIST Data', fontsize = 16)
+    plt.legend()
+    plt.grid()
+    plt.show()
+    print("Mean of projected data:", Z.mean(axis=1))
+
 def fxdist(x,C):
     # CHANGE
     d = C - x.reshape(-1, 1)
@@ -58,25 +80,6 @@ def fcdist(C1,C2):
     # DO NOT CHANGE
     return d
 
-
-def load_data():
-    # Replace '/path/to/file/' with the path to your .mat file
-    base_path = "C:/Users/User/OneDrive/Documents/Lund ar 5/vt/FMAN45/Assignments/1/FMAn45/Code stub and data (3)/Code stub (for students)/Python/A2_data.mat"
-    mat_file_path = base_path
-    try:
-        mat_data = scipy.io.loadmat(mat_file_path)
-    except FileNotFoundError:
-        print(f"Error: File '{mat_file_path}' not found.")
-        mat_data = None
-
-    if mat_data is not None:
-        # Access variables from the .mat file
-        test_data = mat_data['test_data_01']
-        test_labels = mat_data['test_labels_01']
-        train_data = mat_data['train_data_01']
-        train_labels = mat_data['train_labels_01']
-        return [test_data, test_labels, train_data, train_labels]
-    
 def step_assign_cluster(X, C):
     d = X[:, :, None] - C[:, None, :]
     dist = np.sum(d**2, axis=0)
@@ -115,7 +118,7 @@ def svm_linear(X_train, y_train, X_test, C=1.0):
     y_pred_test  = linear_svm.predict(X_test) # .T ?
     return y_pred_train, y_pred_test
 
-def svm_gausian(X_train, y_train, X_test, gamma=0.1):
+def svm_gausian(X_train, y_train, X_test, gamma):
     gaus_svm = SVC(kernel='rbf', gamma=gamma)
     gaus_svm.fit(X_train, y_train)
     y_pred_train = gaus_svm.predict(X_train) #.T ?
@@ -136,45 +139,62 @@ def svm_data_print(y_true, y_pred):
     print(f"'1' {n10:6d} {n11:6d}")
     print(f"Sum misclassified = {sum}")
     print(f"Misclassification rate (%) = {rate:.2f}%\n")
-    
     return n00, n01, n10, n11
 
-    
+
+def load_data():
+    # Replace '/path/to/file/' with the path to your .mat file
+    base_path = "C:/Users/User/OneDrive/Documents/Lund ar 5/vt/FMAN45/Assignments/1/FMAn45/Code stub and data (3)/Code stub (for students)/Python/A2_data.mat"
+    mat_file_path = base_path
+    try:
+        mat_data = scipy.io.loadmat(mat_file_path)
+    except FileNotFoundError:
+        print(f"Error: File '{mat_file_path}' not found.")
+        mat_data = None
+
+    if mat_data is not None:
+        # Access variables from the .mat file
+        test_data = mat_data['test_data_01']
+        test_labels = mat_data['test_labels_01']
+        train_data = mat_data['train_data_01']
+        train_labels = mat_data['train_labels_01']
+        return [test_data, test_labels, train_data, train_labels]
 
 
 if __name__ == "__main__":
     data = load_data()
     
+    # PCA (7) -------------------------------------------------------
+    plot_pca(data[2], data[3].ravel())
     
     # nbr_clusters = 4 # Replace with you chosen int
     # y, C = K_means_clustering(data[2], nbr_clusters)
     
     #SVM linear (12) -------------------------------------------------------
+    # print("SVM linear")
     # y_pred_train, y_pred_test = svm_linear(data[2].T, data[3].ravel(), data[0].T, C=1.0)
-    
-    # n00_train, n01_train, n10_train, n11_train = svm_data_print(y_pred_train, y_pred_train) bara denna
-    # N_train = y_pred_train.size
-    # sum_train = n01_train + n10_train
-    # rate_train = sum_train / N_train * 100
-
-    # n00_test , n01_test , n10_test , n11_test  = svm_data_print(y_pred_test,  y_pred_test) bara denna
-    # N_test  = y_pred_test.size
-    # sum_test  = n01_test  + n10_test
-    # rate_test  = sum_test  / N_test  * 100
-    
-    # print(f"N_train = {N_train}")
-    # print(f"'0' {n00_train:6d} {n01_train:6d}")
-    # print(f"'1' {n10_train:6d} {n11_train:6d}")
-    # print(f"Sum misclassified = {sum_train}")
-    # print(f"Misclassification rate (%) = {rate_train:.2f}%\n")
-    
-    # print(f"N_test  = {N_test}")
-    # print(f"'0' & {n00_test:6d} {n01_test:6d}")
-    # print(f"'1' & {n10_test:6d} {n11_test:6d}")
-    # print(f"Sum misclassified = {sum_test}")
-    # print(f"Misclassification rate (%) = {rate_test:.2f}%")
+    # print("Train data")
+    # svm_data_print(data[3].ravel(), y_pred_train)
+    # print("Test data")
+    # svm_data_print(data[1].ravel(),  y_pred_test)
     
     # SVM gaussian (13) -------------------------------------------------------
-    y_pred_train, y_pred_test = svm_gausian(data[2].T, data[3].ravel(), data[0].T, gamma=0.1)
-    svm_data_print(y_pred_train, y_pred_train)
-    svm_data_print(y_pred_test, y_pred_test)
+    # print("SVM gaussian")
+    # y_pred_train1, y_pred_test1 = svm_gausian(data[2].T, data[3].ravel(), data[0].T, gamma=0.1)
+    # y_pred_train2, y_pred_test2 = svm_gausian(data[2].T, data[3].ravel(), data[0].T, gamma=0.01)
+    # y_pred_train3, y_pred_test3 = svm_gausian(data[2].T, data[3].ravel(), data[0].T, gamma=1)       
+
+    # print("Train data 1 gamma 0.1")
+    # svm_data_print(data[3].ravel(), y_pred_train1)
+    # print("Test data 1 gamma 0.1")
+    # svm_data_print(data[1].ravel(), y_pred_test1)
+
+    # print("Train data 2 gamma 0.01")
+    # svm_data_print(data[3].ravel(), y_pred_train2)
+    # print("Test data 2 gamma 0.01")
+    # svm_data_print(data[1].ravel(), y_pred_test2)
+    
+    # print("Train data 3 gamma 1")
+    # svm_data_print(data[3].ravel(), y_pred_train3)
+    # print("Test data 3 gamma 1")
+    # svm_data_print(data[1].ravel(), y_pred_test3)
