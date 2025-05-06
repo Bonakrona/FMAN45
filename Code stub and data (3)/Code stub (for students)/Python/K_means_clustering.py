@@ -178,6 +178,19 @@ if __name__ == "__main__":
         print(f"Plotting K-means clustering with K = {K}")
         plot_pca(data[2], y)
         
+        # Display centroids (9)
+        fig, axes = plt.subplots(1, K, figsize=(2.8 * K, 3))
+        for k in range(K):
+            if K > 1:
+                ax = axes[k] 
+            else:
+                ax = axes
+            ax.imshow(C[:, k].reshape(28, 28), cmap='gray')
+            ax.set_title(f'Centroid {k}', fontsize=10)
+            ax.axis('off')
+        fig.suptitle(f'Centroids for K = {K}', fontsize=14)
+        plt.tight_layout()
+        plt.show()
     
     #SVM linear (12) -------------------------------------------------------
     # print("SVM linear")
