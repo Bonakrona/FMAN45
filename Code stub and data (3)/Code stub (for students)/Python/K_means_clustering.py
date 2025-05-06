@@ -115,6 +115,44 @@ def K_means_classifier(x, C, c_labels):
     k_near = np.argmin(dist)
     return c_labels[k_near]
 
+def print_K_means_classifier_result(X_train, y_train, X_test, y_test, K):
+    y_clusters, centroids = K_means_clustering(X_train, K)
+    centroid_labels = labeling(y_train, y_clusters, k=K)
+
+    # y_pred_train = np.array([K_means_classifier(x, centroids, centroid_labels) for x in X_train.T])
+    # y_pred_test = np.array([K_means_classifier(x, centroids, centroid_labels) for x in X_test.T])
+
+    print("TRAINING DATA:")
+    print("Cluster |  #0  |  #1  | Assigned | Misclassified")
+    total_misclassified_train = 0
+    for k in range(K):
+        cluster_mask = y_clusters == k
+        c0 = np.sum((y_train == 0) & cluster_mask)
+        c1 = np.sum((y_train == 1) & cluster_mask)
+        assigned = centroid_labels[k]
+        misclassified = np.sum(y_train[cluster_mask] != assigned)
+        total_misclassified_train += misclassified
+        print(f"{k+1:>3}      {c0:>5} {c1:>5}     {assigned:>1}         {misclassified:>5}")
+    print(f"\nN_train = {y_train.size}")
+    print(f"Sum misclassified: {total_misclassified_train}")
+    print(f"Misclassification rate (%): {total_misclassified_train / y_train.size * 100:.2f}")
+
+    print("\nTESTING DATA:")
+    print("Cluster |  #0  |  #1  | Assigned | Misclassified")
+    y_clusters_test = np.array([np.argmin(np.sum((centroids - x[:, None])**2, axis=0)) for x in X_test.T])
+    total_misclassified_test = 0
+    for k in range(K):
+        cluster_mask = y_clusters_test == k
+        c0 = np.sum((y_test == 0) & cluster_mask)
+        c1 = np.sum((y_test == 1) & cluster_mask)
+        assigned = centroid_labels[k]
+        misclassified = np.sum(y_test[cluster_mask] != assigned)
+        total_misclassified_test += misclassified
+        print(f"{k+1:>3}      {c0:>5} {c1:>5}     {assigned:>1}         {misclassified:>5}")
+    print(f"\nN_test = {y_test.size}")
+    print(f"Sum misclassified: {total_misclassified_test}")
+    print(f"Misclassification rate (%): {total_misclassified_test / y_test.size * 100:.2f}")
+
 def svm_linear(X_train, y_train, X_test, C=1.0):
     linear_svm = SVC(kernel='linear', C=C)
     linear_svm.fit(X_train, y_train) # linearsvm.fit(X_train.T, y_train) ? 
@@ -174,23 +212,27 @@ if __name__ == "__main__":
     # nbr_clusters = 2 # Replace with you chosen int
     
     for K in (2, 5):
-        y, C = K_means_clustering(data[2], K)
-        print(f"Plotting K-means clustering with K = {K}")
-        plot_pca(data[2], y)
+        # y, C = K_means_clustering(data[2], K)
+        # print(f"Plotting K-means clustering with K = {K}")
+        # plot_pca(data[2], y)
         
-        # Display centroids (9)
-        fig, axes = plt.subplots(1, K, figsize=(2.8 * K, 3))
-        for k in range(K):
-            if K > 1:
-                ax = axes[k] 
-            else:
-                ax = axes
-            ax.imshow(C[:, k].reshape(28, 28), cmap='gray')
-            ax.set_title(f'Centroid {k}', fontsize=10)
-            ax.axis('off')
-        fig.suptitle(f'Centroids for K = {K}', fontsize=14)
-        plt.tight_layout()
-        plt.show()
+        # # Display centroids (9)
+        # fig, axes = plt.subplots(1, K, figsize=(2.8 * K, 3))
+        # for k in range(K):
+        #     if K > 1:
+        #         ax = axes[k] 
+        #     else:
+        #         ax = axes
+        #     ax.imshow(C[:, k].reshape(28, 28), cmap='gray')
+        #     ax.set_title(f'Centroid {k}', fontsize=10)
+        #     ax.axis('off')
+        # fig.suptitle(f'Centroids for K = {K}', fontsize=14)
+        # plt.tight_layout()
+        # plt.show()
+        
+        print_K_means_classifier_result(data[2], data[3].ravel(), data[0], data[1].ravel(), K)
+        
+        # Print all data result (10.2)
     
     #SVM linear (12) -------------------------------------------------------
     # print("SVM linear")

@@ -47,7 +47,7 @@ for K in (2, 5):
     
     # Exercise .2 continues here - comment below E10.1 and vice versa for E10.2
      
-    print(f"\n=== RESULTS FOR K = {K} ===")
+    print(f"\n RESULTS FOR K = {K}")
     train_clusters, centroids = K_means_clustering(X_train, K)
     centroid_labels = labeling(y_train, train_clusters, k=K)
     
