@@ -99,8 +99,8 @@ def step_compute_mean(X, y, cold):
         else:
             cnew[:, k] = members.mean(axis=1)
             
-    move = np.linalg.norm(cnew - cold)
-    return cnew, move
+    delta = np.linalg.norm(cnew - cold)
+    return cnew, delta
 
 def labeling(y_train, y_clusters, k=2):
     c_labels = np.zeros(k, dtype = int)
@@ -118,9 +118,6 @@ def K_means_classifier(x, C, c_labels):
 def print_K_means_classifier_result(X_train, y_train, X_test, y_test, K):
     y_clusters, centroids = K_means_clustering(X_train, K)
     centroid_labels = labeling(y_train, y_clusters, k=K)
-
-    # y_pred_train = np.array([K_means_classifier(x, centroids, centroid_labels) for x in X_train.T])
-    # y_pred_test = np.array([K_means_classifier(x, centroids, centroid_labels) for x in X_test.T])
 
     print("TRAINING DATA:")
     print("Cluster |  #0  |  #1  | Assigned | Misclassified")
@@ -155,16 +152,16 @@ def print_K_means_classifier_result(X_train, y_train, X_test, y_test, K):
 
 def svm_linear(X_train, y_train, X_test, C=1.0):
     linear_svm = SVC(kernel='linear', C=C)
-    linear_svm.fit(X_train, y_train) # linearsvm.fit(X_train.T, y_train) ? 
-    y_pred_train = linear_svm.predict(X_train) # .T ?
-    y_pred_test  = linear_svm.predict(X_test) # .T ?
+    linear_svm.fit(X_train, y_train)
+    y_pred_train = linear_svm.predict(X_train)
+    y_pred_test  = linear_svm.predict(X_test)
     return y_pred_train, y_pred_test
 
 def svm_gausian(X_train, y_train, X_test, gamma):
     gaus_svm = SVC(kernel='rbf', gamma=gamma)
     gaus_svm.fit(X_train, y_train)
-    y_pred_train = gaus_svm.predict(X_train) #.T ?
-    y_pred_test  = gaus_svm.predict(X_test) # .T ?
+    y_pred_train = gaus_svm.predict(X_train)
+    y_pred_test  = gaus_svm.predict(X_test)
     return y_pred_train, y_pred_test
 
 def svm_data_print(y_true, y_pred):
@@ -207,58 +204,58 @@ if __name__ == "__main__":
     data = load_data()
     
     # PCA (7) -------------------------------------------------------
-    # plot_pca(data[2], data[3].ravel())
+    plot_pca(data[2], data[3].ravel())
     
     # nbr_clusters = 2 # Replace with you chosen int
     
     for K in (2, 5):
-        # y, C = K_means_clustering(data[2], K)
-        # print(f"Plotting K-means clustering with K = {K}")
-        # plot_pca(data[2], y)
+        y, C = K_means_clustering(data[2], K)
+        print(f"Plotting K-means clustering with K = {K}")
+        plot_pca(data[2], y)
         
-        # # Display centroids (9)
-        # fig, axes = plt.subplots(1, K, figsize=(2.8 * K, 3))
-        # for k in range(K):
-        #     if K > 1:
-        #         ax = axes[k] 
-        #     else:
-        #         ax = axes
-        #     ax.imshow(C[:, k].reshape(28, 28), cmap='gray')
-        #     ax.set_title(f'Centroid {k}', fontsize=10)
-        #     ax.axis('off')
-        # fig.suptitle(f'Centroids for K = {K}', fontsize=14)
-        # plt.tight_layout()
-        # plt.show()
+        # Display centroids (9)
+        fig, axes = plt.subplots(1, K, figsize=(2.8 * K, 3))
+        for k in range(K):
+            if K > 1:
+                ax = axes[k] 
+            else:
+                ax = axes
+            ax.imshow(C[:, k].reshape(28, 28), cmap='gray')
+            ax.set_title(f'Centroid {k}', fontsize=10)
+            ax.axis('off')
+        fig.suptitle(f'Centroids for K = {K}', fontsize=14)
+        plt.tight_layout()
+        plt.show()
         
         print_K_means_classifier_result(data[2], data[3].ravel(), data[0], data[1].ravel(), K)
         
         # Print all data result (10.2)
     
     #SVM linear (12) -------------------------------------------------------
-    # print("SVM linear")
-    # y_pred_train, y_pred_test = svm_linear(data[2].T, data[3].ravel(), data[0].T, C=1.0)
-    # print("Train data")
-    # svm_data_print(data[3].ravel(), y_pred_train)
-    # print("Test data")
-    # svm_data_print(data[1].ravel(),  y_pred_test)
+    print("SVM linear")
+    y_pred_train, y_pred_test = svm_linear(data[2].T, data[3].ravel(), data[0].T, C=1.0)
+    print("Train data")
+    svm_data_print(data[3].ravel(), y_pred_train)
+    print("Test data")
+    svm_data_print(data[1].ravel(),  y_pred_test)
     
-    # SVM gaussian (13) -------------------------------------------------------
-    # print("SVM gaussian")
-    # y_pred_train1, y_pred_test1 = svm_gausian(data[2].T, data[3].ravel(), data[0].T, gamma=0.1)
-    # y_pred_train2, y_pred_test2 = svm_gausian(data[2].T, data[3].ravel(), data[0].T, gamma=0.01)
-    # y_pred_train3, y_pred_test3 = svm_gausian(data[2].T, data[3].ravel(), data[0].T, gamma=1)       
+    # # SVM gaussian (13) -------------------------------------------------------
+    print("SVM gaussian")
+    y_pred_train1, y_pred_test1 = svm_gausian(data[2].T, data[3].ravel(), data[0].T, gamma=0.1)
+    y_pred_train2, y_pred_test2 = svm_gausian(data[2].T, data[3].ravel(), data[0].T, gamma=0.01)
+    y_pred_train3, y_pred_test3 = svm_gausian(data[2].T, data[3].ravel(), data[0].T, gamma=1)       
 
-    # print("Train data 1 gamma 0.1")
-    # svm_data_print(data[3].ravel(), y_pred_train1)
-    # print("Test data 1 gamma 0.1")
-    # svm_data_print(data[1].ravel(), y_pred_test1)
+    print("Train data 1 gamma 0.1")
+    svm_data_print(data[3].ravel(), y_pred_train1)
+    print("Test data 1 gamma 0.1")
+    svm_data_print(data[1].ravel(), y_pred_test1)
 
-    # print("Train data 2 gamma 0.01")
-    # svm_data_print(data[3].ravel(), y_pred_train2)
-    # print("Test data 2 gamma 0.01")
-    # svm_data_print(data[1].ravel(), y_pred_test2)
+    print("Train data 2 gamma 0.01")
+    svm_data_print(data[3].ravel(), y_pred_train2)
+    print("Test data 2 gamma 0.01")
+    svm_data_print(data[1].ravel(), y_pred_test2)
     
-    # print("Train data 3 gamma 1")
-    # svm_data_print(data[3].ravel(), y_pred_train3)
-    # print("Test data 3 gamma 1")
-    # svm_data_print(data[1].ravel(), y_pred_test3)
+    print("Train data 3 gamma 1")
+    svm_data_print(data[3].ravel(), y_pred_train3)
+    print("Test data 3 gamma 1")
+    svm_data_print(data[1].ravel(), y_pred_test3)
