@@ -289,7 +289,7 @@ def relu_backward(X, dldZ):
     """
     
     # Implement here
-
+    dldX = dldZ * (X > 0)
     return dldX
 
 def relu_forward(X):
@@ -304,7 +304,7 @@ def relu_forward(X):
     """
     
     # Implement here
-
+    Z = np.maximum(0, X)
     return Z
 
 def softmaxloss_backward(x, labels):

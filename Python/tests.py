@@ -275,5 +275,6 @@ def tests():
     print('Everything passed!')
 
 if __name__ == "__main__":
-    test_fully_connected()
+    # test_fully_connected()
+    test_relu()
     # test_gradient_whole_net()
