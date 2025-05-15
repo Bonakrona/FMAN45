@@ -276,5 +276,6 @@ def tests():
 
 if __name__ == "__main__":
     # test_fully_connected()
-    test_relu()
-    # test_gradient_whole_net()
+    # test_relu()
+    # test_softmaxloss()
+    test_gradient_whole_net()

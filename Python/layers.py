@@ -183,7 +183,8 @@ def fully_connected_backward(X, dldZ, W, b):
     # as suggested.w
     dldX = np.dot(W.T, dldZ)
     dldW = np.dot(dldZ, X.T)
-    dldb  = np.dot(dldZ, np.ones((X.shape[1], 1)))
+    # dldb  = np.dot(dldZ, np.ones((X.shape[1], 1)))
+    dldb = np.sum(dldZ, axis=1, keepdims=True)
     dldX = np.reshape(dldX, sz, order= 'F')
     # dldb = np.sum(dldZ, axis= 1)
     # dldX = dldX.reshape(sz, order = 'F')
@@ -332,10 +333,16 @@ def softmaxloss_backward(x, labels):
     # For numerical stability. Convince yourself that the result is the same.
     x = x - np.min(x, axis=0, keepdims=True)
     
-    labels -= 1
+    # labels -= 1 # had to commen out this loc for test_gradient_whole_net() to pass all tests
 
     # Implement here
-
+    exp_x = np.exp(x)
+    sum_exp_x = np.sum(exp_x, axis=0)
+    softmax = exp_x / sum_exp_x
+    dldx = softmax.copy()
+    dldx[labels, np.arange(batch)] -= 1
+    dldx /= batch
+    dldx = np.reshape(dldx, sz, order='F')
     return dldx
 
 def softmaxloss_forward(x, labels):
@@ -366,6 +373,10 @@ def softmaxloss_forward(x, labels):
     x = x - np.min(x, axis=0)
     
     # Implement here
-    
+    exp_x = np.exp(x)
+    sum_exp_x = np.sum(exp_x, axis=0)
+    softmax = exp_x / sum_exp_x
+    log_softmax = -np.log(softmax[labels, np.arange(batch)])
+    L = np.mean(log_softmax)
     return L
 
