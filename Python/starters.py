@@ -2,6 +2,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 import scipy
 from sklearn.metrics import confusion_matrix, precision_score, recall_score
+import os
 
 from layers import (fully_connected_forward, fully_connected_backward, conv_with_padding_forward, 
                     conv_with_padding_backward, maxpooling_backward, maxpooling_forward, 
@@ -32,7 +33,9 @@ def cifar10_starter():
     if mat_data is not None:
         x_train = mat_data['x_train']
         x_train = x_train.reshape((32, 32, 3, 50000), order='F').astype(np.float32)
-        y_train = mat_data['y_train'].reshape(-1) + 1
+        # y_train = mat_data['y_train'].reshape(-1) + 1
+        y_train = mat_data['y_train'].reshape(-1).astype(int)
+
     mat_file_path = base_path + "cifar_test.mat"
     try:
         mat_data = scipy.io.loadmat(mat_file_path)
@@ -43,7 +46,9 @@ def cifar10_starter():
     if mat_data is not None:
         x_test = mat_data['x_test']
         x_test = x_test.reshape((32, 32, 3, 10000), order='F').astype(np.float32)
-        y_test = mat_data['y_test'].reshape(-1) + 1
+        # y_test = mat_data['y_test'].reshape(-1) + 1
+        y_test = mat_data['y_test'].reshape(-1).astype(int)
+
 
     # Visualize images (optional)
     # Add visualization code here
@@ -73,6 +78,12 @@ def cifar10_starter():
             {'type': 'convolution', 'params': {'weights': 0.1 * np.random.randn(5, 5, 16, 16) / np.sqrt(5 * 5 * 16 / 2), 'biases': np.zeros((16,1))},
              'padding': [2, 2]},
             {'type': 'relu'},
+            {'type': 'maxpooling'},
+            
+            {'type': 'convolution', 'params': {'weights': 0.1 * np.random.randn(3, 3, 16, 64) / np.sqrt(3 * 3 * 16 / 2), 'biases': np.zeros((64,1))},
+             'padding': [1, 1]},
+            {'type': 'relu'},
+            
             {'type': 'fully_connected', 'params': {'weights': np.random.randn(10, 4096) / np.sqrt(4096 / 2), 'biases': np.zeros((10,1))}},
             {'type': 'softmaxloss'}
         ]
@@ -83,15 +94,23 @@ def cifar10_starter():
 
     # Define training options
     training_opts = {
-        'learning_rate': 1e-3,
-        'iterations': 5000,
+        'learning_rate': 2e-3,
+        'iterations': 6000, # changed from 5000 for testing
         'batch_size': 16,
         'momentum': 0.95,
         'weight_decay': 0.001
     }
 
     # Train the neural network
-    net, _ = training(net, x_train, y_train, x_val, y_val, training_opts, make_plots=True)
+    # net, _ = training(net, x_train, y_train, x_val, y_val, training_opts, make_plots=True)
+
+    if os.path.exists("cifar_model_added_layer1.npy"):
+        print("Loading saved model...")
+        net = np.load("cifar_model_added_layer1.npy", allow_pickle=True).item()
+    else:
+        # Train and save the model
+        net, _ = training(net, x_train, y_train, x_val, y_val, training_opts, make_plots=True)
+        np.save("cifar_model_added_layer1.npy", net)
 
     # Save the trained model
     # You need to implement the saving mechanism based on your specific implementation
@@ -110,6 +129,10 @@ def cifar10_starter():
 
     accuracy = np.mean(pred == y_test)
     print(f'Accuracy on the test set: {accuracy}')
+    
+    # np.save("cifar_model.npy", net)
+    evaluate_model_performance(net, x_test, y_test, x_test, evaluate_fn=evaluate, class_names=list(range(10)), dataset_name="CIFAR10")
+
 
 def evaluate(net, inp, labels, evaluate_gradient=True, verbose=False):
     """
@@ -288,17 +311,23 @@ def mnist_starter():
     # Training options
     training_opts = {
         'learning_rate': 1e-1,
-        'iterations': 1000, # changed from 3000 for testing
+        'iterations': 3000, # changed from 3000 for testing
         'batch_size': 16,
         'momentum': 0.9,
         'weight_decay': 0.005
     }
+    
+    model_path = "mnist_model.npy"
+    if os.path.exists(model_path):
+        print("Loading saved MNIST model...")
+        net = np.load(model_path, allow_pickle=True).item()
+    else:
+        # Run the training
+        net, _ = training(net, x_train, y_train, x_val, y_val, training_opts, make_plots=True)
 
-    # Run the training
-    net, _ = training(net, x_train, y_train, x_val, y_val, training_opts, make_plots=True)
+        # Save the trained model
+        np.save('./mnist_model.npy', net)
 
-    # Save the trained model
-    np.save('./network_trained_with_momentum.npy', net)
 
     # Evaluate on the test set
     pred = np.zeros(len(y_test))
@@ -314,75 +343,10 @@ def mnist_starter():
 
     accuracy = np.mean(pred == y_test)
     print(f'Accuracy on the test set: {accuracy:.4f}')
-
+    
     # Plot some misclassified examples ... 
-    filters = net['layers'][1]['params']['weights']
-    fig, axes = plt.subplots(2, 8, figsize=(12, 3))
-    for i, ax in enumerate(axes.flat):
-        ax.imshow(filters[:, :, 0, i], cmap='gray')
-        ax.axis('off')
-        ax.set_title(f'F{i+1}')
-    plt.suptitle('First Conv Layer Kernels')
-    plt.tight_layout()
-    plt.show()
-    
-    wrong = np.where(pred != y_test)[0][:10]
-    fig, axes = plt.subplots(2, 5, figsize=(10, 5))
-    for i, ax in enumerate(axes.flat):
-        ax.imshow(x_test[:, :, 0, wrong[i]], cmap='gray')
-        ax.set_title(f"True: {y_test[wrong[i]]}, Pred: {pred[wrong[i]]}")
-        ax.axis('off')
-    plt.suptitle('Misclassified Images')
-    plt.tight_layout()
-    plt.show()
-    
-    # cm = confusion_matrix(y_test - 1, pred - 1) # Changed indexing here as well
-    # fig, ax = plt.subplots(figsize=(8, 6))
-    # cax = ax.matshow(cm, cmap='Blues')
-    # plt.title('Confusion Matrix')
-    # fig.colorbar(cax)
-    # ax.set_xlabel('Predicted')
-    # ax.set_ylabel('True')
-    # ax.set_xticks(np.arange(10))
-    # ax.set_yticks(np.arange(10))
-    # plt.show()
-    
-    cm = confusion_matrix(y_test - 1, pred - 1)  # Changed indexing here as well
-    fig, ax = plt.subplots(figsize=(8, 6))
-    cax = ax.imshow(cm, interpolation='nearest', cmap=plt.cm.Blues)
-    fig.colorbar(cax)
+    evaluate_model_performance(net, x_test, y_test, x_test, evaluate_fn=evaluate, class_names=list(range(10)), dataset_name="MNIST")
 
-    ax.set_title('Confusion Matrix')
-    ax.set_xlabel('Predicted')
-    ax.set_ylabel('True')
-    tick_marks = np.arange(10)
-    ax.set_xticks(tick_marks)
-    ax.set_yticks(tick_marks)
-
-    thresh = cm.max() / 2.
-    for i in range(cm.shape[0]):
-        for j in range(cm.shape[1]):
-            ax.text(j, i, format(cm[i, j], 'd'),
-                    ha="center", va="center",
-                    color="white" if cm[i, j] > thresh else "black")
-
-    plt.tight_layout()
-    plt.show()
-    
-    precision = precision_score(y_test, pred, average=None)
-    recall = recall_score(y_test, pred, average=None)
-    print("\nPrecision and Recall per digit:")
-    for i in range(10):
-        print(f"Digit {i+1}: Precision = {precision[i]:.2f}, Recall = {recall[i]:.2f}")
-    
-    total_params = 0
-    print("\nNumber of parameters per layer:")
-    for i, layer in enumerate(net["layers"]):
-        if 'params' in layer:
-            count = sum(np.prod(p.shape) for p in layer['params'].values() if isinstance(p, np.ndarray))
-            print(f"Layer {i} ({layer['type']}): {count} parameters")
-            total_params += count
-    print(f"Total parameters in network: {total_params}")
     
     
 
@@ -517,6 +481,85 @@ def training(net, x, labels, x_val, labels_val, opts, make_plots=False):
 
     return net, loss
 
+
+# def evaluate_model_performance(net, x_test, y_test, evaluate_fn, class_names=None, dataset_name="Test"):
+def evaluate_model_performance(net, x_test, y_test, original_images, evaluate_fn, class_names=None, dataset_name="Test"):
+    pred = np.zeros(len(y_test))
+    batch_size = 16
+    for i in range(0, len(y_test), batch_size):
+        idx = slice(i, min(i + batch_size, len(y_test)))
+        y, _ = evaluate_fn(net, x_test[:, :, :, idx], y_test[idx], evaluate_gradient=False)
+        p = np.argmax(y[-2], axis=0)
+        pred[idx] = p
+
+    pred = pred + 1 
+    y_test = y_test.squeeze()
+    
+    if 'params' in net['layers'][1] and 'weights' in net['layers'][1]['params']:
+        filters = net['layers'][1]['params']['weights']
+        fig, axes = plt.subplots(2, min(8, filters.shape[3]), figsize=(12, 3))
+        for i, ax in enumerate(axes.flat):
+            ax.imshow(filters[:, :, 0, i], cmap='gray')
+            ax.axis('off')
+            ax.set_title(f'F{i+1}')
+        plt.suptitle('First Conv Layer Kernels')
+        plt.tight_layout()
+        plt.show()
+        
+    wrong = np.where(pred != y_test)[0][:10]
+    fig, axes = plt.subplots(2, 5, figsize=(10, 5))
+    for i, ax in enumerate(axes.flat):
+        ax.imshow(x_test[:, :, 0, wrong[i]], cmap='gray')
+        ax.set_title(f"True: {y_test[wrong[i]]}, Pred: {pred[wrong[i]]}")
+        ax.axis('off')
+    plt.suptitle('Misclassified Images')
+    plt.tight_layout()
+    plt.show()
+
+    accuracy = np.mean(pred == y_test)
+    print(f"\nAccuracy on the {dataset_name} set: {accuracy:.4f}")
+
+    # Confusion Matrix
+    cm = confusion_matrix(y_test - 1, pred - 1)
+    fig, ax = plt.subplots(figsize=(8, 6))
+    cax = ax.imshow(cm, interpolation='nearest', cmap=plt.cm.Blues)
+    fig.colorbar(cax)
+    ax.set_title('Confusion Matrix')
+    ax.set_xlabel('Predicted')
+    ax.set_ylabel('True')
+    ticks = np.arange(10)
+    ax.set_xticks(ticks)
+    ax.set_yticks(ticks)
+    ax.set_xticklabels(class_names if class_names else ticks)
+    ax.set_yticklabels(class_names if class_names else ticks)
+
+    thresh = cm.max() / 2.
+    for i in range(cm.shape[0]):
+        for j in range(cm.shape[1]):
+            ax.text(j, i, format(cm[i, j], 'd'),
+                    ha="center", va="center",
+                    color="white" if cm[i, j] > thresh else "black")
+    plt.tight_layout()
+    plt.show()
+
+    # Precision and Recall
+    precision = precision_score(y_test, pred, average=None)
+    recall = recall_score(y_test, pred, average=None)
+    print("\nPrecision and Recall per digit:")
+    for i in range(10):
+        print(f"Digit {i+1}: Precision = {precision[i]:.2f}, Recall = {recall[i]:.2f}")
+
+    # Parameter Count
+    total_params = 0
+    print("\nNumber of parameters per layer:")
+    for i, layer in enumerate(net["layers"]):
+        if 'params' in layer:
+            count = sum(np.prod(p.shape) for p in layer['params'].values() if isinstance(p, np.ndarray))
+            print(f"Layer {i} ({layer['type']}): {count} parameters")
+            total_params += count
+    print(f"Total parameters in network: {total_params}")
+
+
 if __name__ == "__main__":
-    mnist_starter()
-    #cifar10_starter()
+    # mnist_starter()
+    cifar10_starter()
