@@ -1,6 +1,7 @@
 import numpy as np
 from matplotlib import pyplot as plt
 import scipy
+from sklearn.metrics import confusion_matrix, precision_score, recall_score
 
 from layers import (fully_connected_forward, fully_connected_backward, conv_with_padding_forward, 
                     conv_with_padding_backward, maxpooling_backward, maxpooling_forward, 
@@ -20,7 +21,7 @@ def cifar10_starter():
     # Add relevant imports based on your specific implementation.
     
     # Load CIFAR-10 dataset
-    base_path = "/your/path/here/"
+    base_path = "C:/Users/User/OneDrive/Documents/Lund ar 5/vt/FMAN45/Assignments/1/FMAN45/Python/"
     mat_file_path = base_path + "all_data.mat"
     try:
         mat_data = scipy.io.loadmat(mat_file_path)
@@ -174,7 +175,7 @@ def evaluate(net, inp, labels, evaluate_gradient=True, verbose=False):
             #if backprop:
             #    grad = relu_backward(res[i-1], grad)
         elif layer['type'] == 'softmaxloss':
-            res[i] = softmaxloss_forward(res[i-1], labels)
+            res[i] = softmaxloss_forward(res[i-1], labels - 1)
             #if backprop:
             #    grad = softmaxloss_backward(res[i-1], labels)
         else:
@@ -209,7 +210,7 @@ def evaluate(net, inp, labels, evaluate_gradient=True, verbose=False):
             elif layer['type'] == 'relu':
                 grad[i] = {"grad": relu_backward(res[i-1], grad[i+1]["grad"])}
             elif layer['type'] == 'softmaxloss':
-                grad[i] = {"grad": softmaxloss_backward(res[i-1], labels)}
+                grad[i] = {"grad": softmaxloss_backward(res[i-1], labels - 1)}
 
             if verbose:
                 print(f'BP Layer {i+1}, ({layer["type"]}) size ({grad[i]["grad"].shape})')
@@ -224,7 +225,7 @@ def mnist_starter():
     None
     """
 
-    base_path = "/your/path/here/"
+    base_path = "C:/Users/User/OneDrive/Documents/Lund ar 5/vt/FMAN45/Assignments/1/FMAN45/Python/"
     mat_file_path = base_path + "train.mat"
     try:
         mat_data = scipy.io.loadmat(mat_file_path)
@@ -287,7 +288,7 @@ def mnist_starter():
     # Training options
     training_opts = {
         'learning_rate': 1e-1,
-        'iterations': 3000,
+        'iterations': 1000, # changed from 3000 for testing
         'batch_size': 16,
         'momentum': 0.9,
         'weight_decay': 0.005
@@ -315,6 +316,75 @@ def mnist_starter():
     print(f'Accuracy on the test set: {accuracy:.4f}')
 
     # Plot some misclassified examples ... 
+    filters = net['layers'][1]['params']['weights']
+    fig, axes = plt.subplots(2, 8, figsize=(12, 3))
+    for i, ax in enumerate(axes.flat):
+        ax.imshow(filters[:, :, 0, i], cmap='gray')
+        ax.axis('off')
+        ax.set_title(f'F{i+1}')
+    plt.suptitle('First Conv Layer Kernels')
+    plt.tight_layout()
+    plt.show()
+    
+    wrong = np.where(pred != y_test)[0][:10]
+    fig, axes = plt.subplots(2, 5, figsize=(10, 5))
+    for i, ax in enumerate(axes.flat):
+        ax.imshow(x_test[:, :, 0, wrong[i]], cmap='gray')
+        ax.set_title(f"True: {y_test[wrong[i]]}, Pred: {pred[wrong[i]]}")
+        ax.axis('off')
+    plt.suptitle('Misclassified Images')
+    plt.tight_layout()
+    plt.show()
+    
+    # cm = confusion_matrix(y_test - 1, pred - 1) # Changed indexing here as well
+    # fig, ax = plt.subplots(figsize=(8, 6))
+    # cax = ax.matshow(cm, cmap='Blues')
+    # plt.title('Confusion Matrix')
+    # fig.colorbar(cax)
+    # ax.set_xlabel('Predicted')
+    # ax.set_ylabel('True')
+    # ax.set_xticks(np.arange(10))
+    # ax.set_yticks(np.arange(10))
+    # plt.show()
+    
+    cm = confusion_matrix(y_test - 1, pred - 1)  # Changed indexing here as well
+    fig, ax = plt.subplots(figsize=(8, 6))
+    cax = ax.imshow(cm, interpolation='nearest', cmap=plt.cm.Blues)
+    fig.colorbar(cax)
+
+    ax.set_title('Confusion Matrix')
+    ax.set_xlabel('Predicted')
+    ax.set_ylabel('True')
+    tick_marks = np.arange(10)
+    ax.set_xticks(tick_marks)
+    ax.set_yticks(tick_marks)
+
+    thresh = cm.max() / 2.
+    for i in range(cm.shape[0]):
+        for j in range(cm.shape[1]):
+            ax.text(j, i, format(cm[i, j], 'd'),
+                    ha="center", va="center",
+                    color="white" if cm[i, j] > thresh else "black")
+
+    plt.tight_layout()
+    plt.show()
+    
+    precision = precision_score(y_test, pred, average=None)
+    recall = recall_score(y_test, pred, average=None)
+    print("\nPrecision and Recall per digit:")
+    for i in range(10):
+        print(f"Digit {i+1}: Precision = {precision[i]:.2f}, Recall = {recall[i]:.2f}")
+    
+    total_params = 0
+    print("\nNumber of parameters per layer:")
+    for i, layer in enumerate(net["layers"]):
+        if 'params' in layer:
+            count = sum(np.prod(p.shape) for p in layer['params'].values() if isinstance(p, np.ndarray))
+            print(f"Layer {i} ({layer['type']}): {count} parameters")
+            total_params += count
+    print(f"Total parameters in network: {total_params}")
+    
+    
 
 def training(net, x, labels, x_val, labels_val, opts, make_plots=False):
     """
