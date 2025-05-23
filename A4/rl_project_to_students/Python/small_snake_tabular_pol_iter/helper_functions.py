@@ -378,7 +378,17 @@ def policy_iteration(pol_eval_tol, next_state_idxs, rewards, gamm):
             Delta = 0
             for state_idx in range(nbr_states):
                 # FILL IN POLICY EVALUATION WITHIN THIS LOOP.
-
+                next_state = next_state_idxs[state_idx, policy[state_idx]]
+                if next_state == -1:
+                    updated_value = rewards['apple']
+                elif next_state == -2:
+                    updated_value = rewards['death']
+                else:
+                    updated_value = rewards['default'] + gamm * values[0, int(next_state)]
+                
+                Delta = max(Delta, np.abs(values[0, state_idx] - (updated_value)))
+                values[0, state_idx] = updated_value
+                
             # Increase nbr_pol_eval counter.
             nbr_pol_eval += 1
 
@@ -392,6 +402,23 @@ def policy_iteration(pol_eval_tol, next_state_idxs, rewards, gamm):
         policy_stable = True
         for state_idx in range(nbr_states):
             # FILL IN POLICY IMPROVEMENT WITHIN THIS LOOP.
+            old_action = policy[state_idx]
+            next_state = next_state_idxs[state_idx, old_action]
+            next_state = next_state_idxs[state_idx, :]
+            
+            q_values = np.zeros(nbr_actions)
+            for i, s in enumerate(next_state):
+                s = next_state_idxs[state_idx, i]
+                if s == -1:
+                    q_values[i] = rewards['apple']
+                elif s == -2:
+                    q_values[i] = rewards['death']
+                else:
+                    q_values[i] = rewards['default'] + gamm * values[0, int(s)]
+
+            policy[state_idx] = np.argmax(q_values)
+            if policy[state_idx] != old_action:
+                policy_stable = False
 
         # Increase the number of policy iterations.
         nbr_pol_iter += 1
