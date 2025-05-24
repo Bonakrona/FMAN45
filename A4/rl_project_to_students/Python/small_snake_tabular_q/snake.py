@@ -24,7 +24,7 @@ nbr_apples = 1
 
 # ----- YOU MAY CHANGE SETTINGS BELOW UNLESS OTHERWISE NOTIFIED! ----------
 # Specify whether to test the agent or not (False --> train agent)
-test_agent = False
+test_agent = True
 
 # Updates per second (when watching the agent play).
 updates_per_sec = 5
@@ -35,13 +35,13 @@ show_fraction = 0 # 1: show everything, 0: show nothing, 0.1: show every tenth, 
 # Stuff related to the learning agent
 # Stuff related to learning agent (YOU SHOULD EXPERIMENT A LOT WITH THESE
 # SETTINGS - SEE EXERCISE 6).
-rewards = {'default': 0, 'apple': 1, 'death': -1}
+rewards = {'default': -1, 'apple': 10, 'death': -1000}
 gamm = 0.9 # Discount factor in q learning
-alph = 0.01 # learning rate in Q learning
-eps = 0.01 # Random action selection probability in epsilon-greedy Q-learning
-alph_update_iter = 0 #0: Never update alpha, Positive integer k: Update alpha every kth episode
+alph = 0.2 # learning rate in Q learning
+eps = 0.2 # Random action selection probability in epsilon-greedy Q-learning
+alph_update_iter = 2500 #0: Never update alpha, Positive integer k: Update alpha every kth episode
 alph_update_factor = 0.5 # At alpha update: new alpha = old alpha * alph_update_factor
-eps_update_iter = 0 # 0: Never update eps, Positive integer k: Update eps every kth episode
+eps_update_iter = 2500 # 0: Never update eps, Positive integer k: Update eps every kth episode
 eps_update_factor = 0.5 # At eps update: new eps = old eps * eps_update_factor
 
 # ------- DO NOT CHANGE ANYTHING BELOW UNLESS OTHERWISE NOTIFIED --------
@@ -119,7 +119,7 @@ for i in range(1, nbr_ep + 1):
     while True:
         # Get state information
         state = grid_to_state_4_tuple(grid)
-        state_idx = int(np.where(np.all(states[:, :4] == state, axis=1))[0])
+        state_idx = int(np.where(np.all(states[:, :4] == state, axis=1))[0][0]) # had to add [0] for numpy to convert properly
 
         # epsilon-greedy action selection
         if np.random.rand() < eps:
@@ -170,10 +170,10 @@ for i in range(1, nbr_ep + 1):
             # Hint: Q(s,a) <-- (1 - alpha) * Q(s,a) + sample
             # can be rewritten as Q(s,a) <-- Q(s,a) + alpha * (sample - Q(s,a))
 
-            sample = None
-            pred = None
+            sample = reward
+            pred = Q_vals[state_idx, action]
             td_err = sample - pred # don't change this.
-            Q_vals[state_idx, action] += None
+            Q_vals[state_idx, action] += alph * td_err
 
             # -- DO NOT CHANGE ANYTHING BELOW UNLESS OTHERWISE NOTIFIED ---
             # -- (IMPLEMENT NON-TERMINAL Q-UPDATE FURTHER DOWN) -----------
@@ -210,7 +210,7 @@ for i in range(1, nbr_ep + 1):
 
         # Check the next state and associated next state index
         next_state = grid_to_state_4_tuple(grid)
-        next_state_idx = np.where(np.all(states[:, :4] == next_state, axis=1))[0]
+        next_state_idx = np.where(np.all(states[:, :4] == next_state, axis=1))[0][0] # add [0]?
 
         # Q-value update for non-terminal state
         # FILL IN THE BLANKS TO IMPLEMENT THE Q-UPDATE BELOW (SEE SLIDES) 
@@ -218,10 +218,10 @@ for i in range(1, nbr_ep + 1):
         # Q_vals(state_idx, action)
         # Hint: Q(s,a) <-- (1 - alpha) * Q(s,a) + sample
         # can be rewritten as Q(s,a) <-- Q(s,a) + alpha * (sample - Q(s,a))
-        sample = None
-        pred = None
+        sample = reward + gamm * np.max(Q_vals[next_state_idx, :])
+        pred = Q_vals[state_idx, action]
         td_err = sample - pred # don't change this!
-        Q_vals[state_idx, action] += None
+        Q_vals[state_idx, action] += alph * td_err
 
 # Finally, save agent Q-values (if not in test mode already)
 if not test_agent:
