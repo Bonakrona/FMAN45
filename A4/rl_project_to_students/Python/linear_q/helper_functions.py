@@ -180,6 +180,8 @@ def extract_state_action_features(prev_grid, grid, prev_head_loc, nbr_feats):
     # you choose (3 are used below), and of course replace the randn()
     # by something more sensible.
 
+    apple_loc = np.argwhere(grid == -1)[0]
+
     snake_len_init = 10
     for action in range(1, 4):  # Evaluate all the different actions (left, forward, right).
         # Feel free to uncomment below line of code if you find it useful.
@@ -188,9 +190,23 @@ def extract_state_action_features(prev_grid, grid, prev_head_loc, nbr_feats):
         # Replace this to fit the number of state-action features per features
         # you choose (3 are used below), and of course replace the randn()
         # by something more sensible.
-        state_action_feats[0, action-1] = np.random.randn()
-        state_action_feats[1, action-1] = np.random.randn()
-        state_action_feats[2, action-1] = np.random.randn()
+        # state_action_feats[0, action-1] = np.random.randn()
+        # state_action_feats[1, action-1] = np.random.randn()
+        # state_action_feats[2, action-1] = np.random.randn()
+        # replaced with code below
+        if nbr_feats >= 1:
+            dist = np.abs(next_head_loc - apple_loc).sum()
+            state_action_feats[0, action - 1] = -dist / (2 * N)
+
+        if nbr_feats >= 2:
+            r, c = next_head_loc
+            state_action_feats[1, action - 1] = 1 if grid[r, c] in [0, -1] else 0
+
+        if nbr_feats >= 3:
+            current_dist = np.abs(head_loc - apple_loc).sum()
+            new_dist = np.abs(next_head_loc - apple_loc).sum()
+            state_action_feats[2, action - 1] = 1 if new_dist < current_dist else 0
+
 
     return state_action_feats, prev_grid, prev_head_loc
 

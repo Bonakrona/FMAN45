@@ -30,12 +30,15 @@ rewards = {'default': 0, 'apple': 1, 'death': -1}
 # Tolerance in policy evaluation - ALLOWED TO BE CHANGED
 # Experiment with different tolerances (try as small as 1e-4, up to as
 # large as 1e4). Does the tolerance affect the final policy (SEE EXERCISE 5)?
-pol_eval_tol = 1e0
+pol_eval_tol = 1e4
 
 # Discount factor gamma - ALLOWED TO BE CHANGED
 # Experiment with gamm; set it to 0, 1 and some values in (0,1). 
 # What happens in the respective cases (SEE EXERCISE 5)?
-gamm = 0.5
+# gamm = 0.5
+# gamm = 0.0
+# gamm = 1.0
+gamm = 0.95
 
 # ------- DO NOT CHANGE ANYTHING BELOW THIS LINE! -----------------------
 # ------- BUT DON'T FORGET TO IMPLEMENT policy_iteration.m --------------
